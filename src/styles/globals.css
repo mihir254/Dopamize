@@ -1,3 +1,29 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* For Webkit (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+    width: 8px; /* Width of the scrollbar */
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+background: #f1f1f1; /* Background color of the track */
+border-radius: 6px; /* Rounded corners */
+}
+
+/* Handle */
+::-webkit-scrollbar-thumb {
+background: #888; /* Color of the handle */
+border-radius: 6px; /* Rounded corners */
+}
+
+/* Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+background: #555; /* Color of the handle on hover */
+}
+
+.scrollbar-hidden::-webkit-scrollbar {
+display: none;
+}
