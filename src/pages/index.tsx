@@ -3,6 +3,7 @@ import { RxTrash } from "react-icons/rx";
 import { useEffect, useState } from "react";
 import { DragDropContext, DragStart, DragUpdate, Draggable, DropResult, Droppable } from "react-beautiful-dnd";
 import { GetServerSideProps, GetServerSidePropsContext } from "next";
+import TaskData from "./components/data";
 
 type Task = {
     _id: string,
@@ -21,32 +22,57 @@ const Home = ({ initialTasks }: { initialTasks: Task[] }) => {
     const [taskFormActive, setTaskFormActive] = useState <boolean> (false);
     const [taskForm, setTaskForm] = useState<Task>(initialTaskForm);
     const [ready, setReady] = useState <boolean> (false);
+    const [activeScreen, setActiveScreen] = useState<string>('Daily');
 
     useEffect(() => {
         setReady(true);
     }, []);
 
-    const handleTaskStatusChange = (index: number) => {
-        setTasks(prevTasks => prevTasks.map((task, ind) => {
-            if (ind == index) {
-                return {...task, completed: !task.completed }
-            }
-            return task;
-        }));
+    const handleTaskAdd = async () => {
+        setTaskFormActive(false);
+        const response = await fetch("/api/tasks", {
+            method: "POST",
+            body: JSON.stringify(taskForm),
+        });
+        if (response.ok) {
+            const data = await response.json();
+            setTasks(prevTasks => [{_id: data?.data, task: taskForm.task, completed: false}, ...prevTasks]);
+        }
+        setTaskForm(initialTaskForm);
     }
 
-    const handleTaskDelete = (index: number) => {
-        setTasks(prevTasks => prevTasks.filter((task, ind) => index !== ind));
+    const handleTaskUpdate = async (id: string) => {
+        const taskToUpdate = tasks.filter((task: Task) => task._id === id)[0];
+        const response = await fetch (`/api/tasks/${id}`, {
+            method: "PUT",
+            body: JSON.stringify({
+                task: taskToUpdate.task,
+                completed: !taskToUpdate.completed,
+            })
+        });
+        if (response.ok) {
+            const data = await response.json();
+            setTasks(prevTasks => prevTasks.map((task, ind) => {
+                if (task._id == id) {
+                    return {...task, completed: !task.completed }
+                }
+                return task;
+            }));
+        }
+    }
+
+    const handleTaskDelete = async (id: string) => {
+        const response = await fetch(`/api/tasks/${id}`, {
+            method: "DELETE"
+        });
+        if (response.ok) {
+            const data = await response.json();
+            setTasks(prevTasks => prevTasks.filter((task, ind) => task._id !== id));
+        }
     }
 
     const handleAddTask = () => {
         setTaskFormActive(!taskFormActive);
-    }
-
-    const handleSaveTask = () => {
-        setTaskFormActive(false);
-        setTaskForm(initialTaskForm);
-        setTasks(prevTasks => [taskForm, ...prevTasks]);
     }
 
     const onDragStart = (start: DragStart) => {
@@ -75,6 +101,14 @@ const Home = ({ initialTasks }: { initialTasks: Task[] }) => {
         return reorderedList;
     }
 
+    const toggleActiveScreen = () => {
+        if (activeScreen === 'Daily') {
+            setActiveScreen('Monthly');
+        } else {
+            setActiveScreen('Daily');
+        }
+    }
+
     return (
         ready &&
         <DragDropContext
@@ -84,20 +118,20 @@ const Home = ({ initialTasks }: { initialTasks: Task[] }) => {
         >
             <div className="flex flex-col h-screen bg-[#222222] items-center">
                 <div className="w-screen h-20 bg-[#000000] flex items-center shadow-lg">
-                    <p className="text-white text-4xl font-sans font-semibold pl-5">EZIMAPOD</p>
+                    <p className="text-white text-2xl sm:text-4xl font-sans font-semibold px-5 py-5 sm:py-0">EZIMAPOD</p>
                 </div>
-                <button className="w-1/2 bg-[#000000] mt-10 rounded-2xl shadow-xl flex flex-col items-center justify-center">
-                    <p className="text-white font-semibold font-mono text-2xl mt-5 pb-2">TODAY'S PROGRESS</p>
+                <button className="w-5/6 md:w-3/4 lg:w-1/2 bg-[#000000] mt-7 sm:mt-10 rounded-2xl shadow-xl flex flex-col items-center justify-center" onClick={toggleActiveScreen}>
+                    <p className="text-white font-semibold font-mono text-lg sm:text-xl md:text-2xl mt-5 pb-2">TODAY'S PROGRESS</p>
                     <div className="w-4/5 h-8 bg-white rounded-full mb-8 overflow-hidden">
                         {tasks.length > 0 && <div className="h-8 bg-sky-500 rounded-l-full flex items-center justify-end" style={{width: `${((tasks.filter(task => task.completed).length / tasks.length * 100).toFixed(0))}%`}}>
                             <p className="pr-3 text-white font-semibold font-mono">{(tasks.filter(task => task.completed).length / tasks.length * 100).toFixed(0)}%</p>
                         </div>}
                     </div>
                 </button>
-                <div className="h-2/3 w-1/2 mt-10 shadow-2xl rounded-2xl bg-[#111111] flex flex-col">
+                {activeScreen === 'Daily' ? <div className="mb-3 overflow-hidden w-6/7 md:w-3/4 lg:w-1/2 mt-7 sm:mt-10 shadow-2xl rounded-2xl bg-[#111111] flex flex-col">
                     <div className="flex items-center justify-between py-3 px-5 rounded-t-2xl bg-[#000000]">
-                        <p className="text-white font-semibold text-3xl">TASKS</p>
-                        <button className="flex border-4 border-gray-500 w-14 h-14 rounded-full items-center justify-center" onClick={handleAddTask}>
+                        <p className="text-white font-semibold text-xl sm:text-2xl md:text-3xl">TASKS</p>
+                        <button className="flex border-4 border-gray-500 w-10 h-10 md:w-14 md:h-14 rounded-full items-center justify-center" onClick={handleAddTask}>
                             {taskFormActive ? <HiX color="white" size={28}/> : <HiPlus color="white" size={28}/>}
                         </button>
                     </div>
@@ -114,7 +148,7 @@ const Home = ({ initialTasks }: { initialTasks: Task[] }) => {
                                         />
                                         <button disabled={taskForm.task === ''} className="ml-auto flex items-center justify-center h-12 w-12
                                             rounded-full border-slate-500 disabled:cursor-not-allowed disabled:opacity-40"
-                                            onClick={handleSaveTask}
+                                            onClick={handleTaskAdd}
                                         >
                                             <div className="flex items-center justify-center h-12 w-12 rounded-full bg-green-500">
                                                 <HiCheck size={26} color="white"/>
@@ -130,13 +164,13 @@ const Home = ({ initialTasks }: { initialTasks: Task[] }) => {
                                                     {...provided.draggableProps}
                                                     ref={provided.innerRef}
                                                 >
-                                                    <button className="flex items-center justify-center h-10 w-10 rounded-full border-2 border-white" onClick={() => handleTaskStatusChange(index)}>
+                                                    <button className="flex items-center justify-center h-8 w-8 sm:h-10 sm:w-10 rounded-full border-2 border-white" onClick={() => handleTaskUpdate(item._id)}>
                                                         {item.completed ? <div className="flex items-center justify-center h-8 w-8 rounded-full bg-sky-600">
                                                             <HiCheck size={22} color="white"/>
                                                         </div> : null}
                                                     </button>
-                                                    <p className="ml-16 font-mono text-xl font-semibold">{item.task}</p>
-                                                    <button className="ml-auto flex items-center justify-center h-10 w-10 rounded-xl bg-red-500" onClick={() => handleTaskDelete(index)}>
+                                                    <p className="ml-5 sm:ml-8 md:ml-16 font-mono text-md sm:text-lg md:text-xl font-semibold">{item.task}</p>
+                                                    <button className="ml-auto flex items-center justify-center h-8 w-8 sm:h-10 sm:w-10 rounded-xl bg-red-500" onClick={() => handleTaskDelete(item._id)}>
                                                         <RxTrash size={22} color="white"/>
                                                     </button>
                                                 </li>
@@ -148,7 +182,7 @@ const Home = ({ initialTasks }: { initialTasks: Task[] }) => {
                             )}
                         </Droppable>
                     </ul>
-                </div>
+                </div> : null}
             </div>
         </DragDropContext>
     )
@@ -159,16 +193,17 @@ export default Home;
 export const getServerSideProps: GetServerSideProps = async (context: GetServerSidePropsContext) => {
 	try {
 		const server = process.env.SERVER;
-		let initialTasks = await fetch(`${server}/api/tasks`, {
+		let response = await fetch(`${server}/api/tasks`, {
 			method: "GET",
 			headers: {
 				"Content-Type": "application/json",
 			},
 		});
-        console.log(initialTasks);
+        const taskResponse = await response.json();
+        const initialTasks = taskResponse?.data;
 		return {
 			props: {
-                initialTasks: []
+                initialTasks
 			}
 		}
 	} catch (error) {
