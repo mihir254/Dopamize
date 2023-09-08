@@ -3,6 +3,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { Db, ObjectId } from "mongodb";
 
 const getAllTasks = async (db: Db, req: NextApiRequest, res: NextApiResponse) => {
+    console.log("I am here in get all tasks")
     const allTasks = await db?.collection("Tasks").find({}).toArray();
     res.status(200).json({ message: "Fetched Data Successfully", data: allTasks });
 }

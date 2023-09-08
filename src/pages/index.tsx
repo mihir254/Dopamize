@@ -128,7 +128,7 @@ const Home = ({ initialTasks }: { initialTasks: Task[] }) => {
                         </div>}
                     </div>
                 </button>
-                {activeScreen === 'Daily' ? <div className="mb-3 overflow-hidden w-6/7 md:w-3/4 lg:w-1/2 mt-7 sm:mt-10 shadow-2xl rounded-2xl bg-[#111111] flex flex-col">
+                {activeScreen === 'Daily' ? <div className="mb-5 pb-5 overflow-hidden w-6/7 md:w-3/4 lg:w-1/2 mt-7 sm:mt-10 shadow-2xl rounded-2xl bg-[#111111] flex flex-col">
                     <div className="flex items-center justify-between py-3 px-5 rounded-t-2xl bg-[#000000]">
                         <p className="text-white font-semibold text-xl sm:text-2xl md:text-3xl">TASKS</p>
                         <button className="flex border-4 border-gray-500 w-10 h-10 md:w-14 md:h-14 rounded-full items-center justify-center" onClick={handleAddTask}>
@@ -192,7 +192,12 @@ export default Home;
 
 export const getServerSideProps: GetServerSideProps = async (context: GetServerSidePropsContext) => {
 	try {
-		const server = process.env.SERVER;
+		let server;
+        if (process.env.NODE_ENV === 'development') {
+            server = process.env.DEV_SERVER;
+        } else {
+            server = process.env.PROD_SERVER;
+        }
 		let response = await fetch(`${server}/api/tasks`, {
 			method: "GET",
 			headers: {
