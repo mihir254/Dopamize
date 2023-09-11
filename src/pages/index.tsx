@@ -193,6 +193,7 @@ export default Home;
 export const getServerSideProps: GetServerSideProps = async (context: GetServerSidePropsContext) => {
 	try {
 		let server = process.env.SERVER;
+        
 		let response = await fetch(`${server}/api/tasks`, {
 			method: "GET",
 			headers: {
